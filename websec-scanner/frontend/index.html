@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSec AI Scanner</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <img src="/static/img/favicon.svg" alt="Logo" class="h-8 w-8 text-indigo-600">
+                    <span class="ml-2 font-bold text-xl">WebSec AI Scanner</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Scan Form -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Start New Scan</h2>
+            <form id="scanForm" class="space-y-4">
+                <div>
+                    <label for="url" class="block text-sm font-medium text-gray-700">Target URL</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <input type="text" name="url" id="url" required pattern="https?://.+"
+                            class="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            placeholder="https://example.com"
+                            title="Please enter a valid URL starting with http:// or https://">
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Enter a complete URL including http:// or https://</p>
+                </div>
+                <div>
+                    <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <i class="fas fa-search mr-2"></i>
+                        Start Scan
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Scan Results -->
+        <div id="scanResults" class="hidden">
+            <!-- Progress Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Scan Progress</h3>
+                <div class="relative pt-1">
+                    <div class="flex mb-2 items-center justify-between">
+                        <div>
+                            <span id="scanStatus" class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200">
+                                In Progress
+                            </span>
+                        </div>
+                        <div class="text-right">
+                            <span id="scanProgress" class="text-xs font-semibold inline-block text-indigo-600">
+                                0%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-200">
+                        <div id="progressBar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500 transition-all duration-500"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vulnerabilities Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h3 class="text-lg font-semibold mb-4">Detected Vulnerabilities</h3>
+                <div id="vulnerabilitiesList" class="space-y-4">
+                    <!-- Vulnerabilities will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold mb-4">AI Insights</h3>
+                <div id="aiInsights" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Risk Score -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-medium text-gray-500">Overall Risk Score</h4>
+                            <span id="riskScore" class="text-2xl font-bold text-indigo-600">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Technology Detection -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Detected Technologies</h4>
+                        <div id="detectedTech" class="flex flex-wrap gap-2">
+                            <!-- Technologies will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script>
+            const form = document.getElementById('scanForm');
+            const urlInput = document.getElementById('url');
+            
+            // Validate URL format
+            function isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const url = urlInput.value;
+                
+                if (!isValidUrl(url)) {
+                    alert('Please enter a valid URL including http:// or https://');
+                    return;
+                }
+                
+                // Show results section
+            document.getElementById('scanResults').classList.remove('hidden');
+            
+            try {
+                // Start scan
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Update UI with results
+                updateResults(data);
+                
+            } catch (error) {
+                console.error('Scan failed:', error);
+                alert('Scan failed: ' + error.message);
+            }
+        });
+
+        function updateResults(data) {
+            // Update progress
+            document.getElementById('scanProgress').textContent = '100%';
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('scanStatus').textContent = 'Completed';
+            
+            // Update risk score
+            document.getElementById('riskScore').textContent = 
+                Math.round(data.results.risk_score * 100);
+            
+            // Clear previous vulnerabilities
+            const vulnList = document.getElementById('vulnerabilitiesList');
+            vulnList.innerHTML = '';
+            
+            // Add vulnerabilities
+            data.results.vulnerabilities.forEach(vuln => {
+                const vulnElement = createVulnerabilityElement(vuln);
+                vulnList.appendChild(vulnElement);
+            });
+            
+            // Update detected technologies
+            const techContainer = document.getElementById('detectedTech');
+            techContainer.innerHTML = '';
+            
+            data.results.technologies.forEach(tech => {
+                const techBadge = document.createElement('span');
+                techBadge.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-800';
+                techBadge.textContent = tech;
+                techContainer.appendChild(techBadge);
+            });
+        }
+
+        function createVulnerabilityElement(vuln) {
+            const element = document.createElement('div');
+            element.className = 'border rounded-lg p-4';
+            
+            const severityColor = getSeverityColor(vuln.risk_score);
+            
+            element.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-medium">${vuln.type}</h4>
+                    <span class="px-2 py-1 rounded-full text-xs font-medium ${severityColor}">
+                        Risk: ${Math.round(vuln.risk_score * 100)}%
+                    </span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">${vuln.recommendation}</p>
+                <div class="text-xs text-gray-500">
+                    <pre class="bg-gray-50 p-2 rounded overflow-x-auto">${vuln.evidence}</pre>
+                </div>
+            `;
+            
+            return element;
+        }
+
+        function getSeverityColor(score) {
+            if (score >= 0.8) return 'bg-red-100 text-red-800';
+            if (score >= 0.5) return 'bg-yellow-100 text-yellow-800';
+            return 'bg-green-100 text-green-800';
+        }
+    </script>
+</body>
+</html>
