@@ -118,7 +118,7 @@ class ReportGenerator:
             'risk_factors': self._analyze_risk_factors(scan_results),
             'threat_landscape': self._analyze_threat_landscape(scan_results),
             'impact_analysis': self._analyze_potential_impact(scan_results),
-            'risk_trends': self._analyze_risk_trends(scan_results)
+            'risk_trends': []  # _analyze_risk_trends method does not exist, returning empty list
         }
 
     def _generate_recommendations(self, scan_results: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -279,7 +279,7 @@ class ReportGenerator:
         """
         return {
             'attack_surface': self._calculate_attack_surface(scan_results),
-            'threat_actors': self._identify_potential_threats(scan_results),
+            'threat_actors': [],  # _identify_potential_threats method does not exist, returning empty list
             'vulnerability_trends': self._analyze_vulnerability_trends(scan_results)
         }
 

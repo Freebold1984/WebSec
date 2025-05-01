@@ -1,3 +1,4 @@
+
 from typing import Dict, List, Any
 import logging
 from datetime import datetime
@@ -41,23 +42,23 @@ class IntelligentScanner:
             # Perform vulnerability scanning with intelligent payloads
             vulnerabilities = self._scan_vulnerabilities(target_url, payloads)
             
-            # Mock some example vulnerabilities for testing
-            example_vulns = [
-                {
-                    'type': 'XSS',
-                    'risk_score': 0.85,
-                    'evidence': '<script>alert("XSS")</script> was reflected in response',
-                    'recommendation': 'Implement proper input validation and output encoding'
-                },
-                {
-                    'type': 'SQL Injection',
-                    'risk_score': 0.75,
-                    'evidence': "SQL error detected: 'mysql_error' in response",
-                    'recommendation': 'Use parameterized queries and input validation'
-                }
-            ]
+            # Remove static example vulnerabilities to avoid repeated results
+            # example_vulns = [
+            #     {
+            #         'type': 'XSS',
+            #         'risk_score': 0.85,
+            #         'evidence': '<script>alert("XSS")</script> was reflected in response',
+            #         'recommendation': 'Implement proper input validation and output encoding'
+            #     },
+            #     {
+            #         'type': 'SQL Injection',
+            #         'risk_score': 0.75,
+            #         'evidence': "SQL error detected: 'mysql_error' in response",
+            #         'recommendation': 'Use parameterized queries and input validation'
+            #     }
+            # ]
             
-            vulnerabilities.extend(example_vulns)
+            # vulnerabilities.extend(example_vulns)
             
             # Update scan status
             self.active_scans[scan_id].update({
@@ -111,8 +112,30 @@ class IntelligentScanner:
         
         for payload in payloads:
             try:
-                # Test payload
-                result = self._test_payload(url, payload)
+                # Prepare payload injection
+                method = payload.get('method', 'GET')
+                content = payload.get('content', '')
+                headers = payload.get('headers', {})
+                
+                # Inject payload in URL query parameters for GET requests
+                if method.upper() == 'GET':
+                    if '?' in url:
+                        test_url = f"{url}&input={content}"
+                    else:
+                        test_url = f"{url}?input={content}"
+                    response = requests.get(test_url, headers=headers, timeout=10)
+                else:
+                    # For POST or other methods, send payload in data
+                    data = payload.get('data')
+                    if data is None:
+                        data = {'input': content}
+                    response = requests.request(method, url, data=data, headers=headers, timeout=10)
+                
+                result = {
+                    'status': response.status_code,
+                    'headers': dict(response.headers),
+                    'content': response.text
+                }
                 
                 # Analyze response with AI
                 analysis = self.ai_engine.analyze_response(result)
@@ -120,7 +143,7 @@ class IntelligentScanner:
                 if analysis.get('risk_score', 0) > 0.7:  # High risk threshold
                     vulnerabilities.append({
                         'type': payload.get('type', 'Unknown'),
-                        'payload': payload.get('content', ''),
+                        'payload': content,
                         'risk_score': analysis.get('risk_score', 0),
                         'evidence': result,
                         'recommendation': self._generate_recommendation(payload.get('type', ''))
@@ -141,7 +164,18 @@ class IntelligentScanner:
             data = payload.get('data')
             headers = payload.get('headers', {})
             
-            response = requests.request(method, url, data=data, headers=headers, timeout=10)
+            # Inject payload in URL query parameters for GET requests
+            if method.upper() == 'GET':
+                content = payload.get('content', '')
+                if '?' in url:
+                    test_url = f"{url}&input={content}"
+                else:
+                    test_url = f"{url}?input={content}"
+                response = requests.get(test_url, headers=headers, timeout=10)
+            else:
+                if data is None:
+                    data = {'input': payload.get('content', '')}
+                response = requests.request(method, url, data=data, headers=headers, timeout=10)
             
             return {
                 'status': response.status_code,
